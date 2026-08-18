@@ -3,21 +3,7 @@
 
 #import <Foundation/Foundation.h>
 #import <IOSurface/IOSurface.h>
-
-/// Model configuration shared across all Orion components.
-#ifndef ORION_MODEL_CONFIG_DEFINED
-#define ORION_MODEL_CONFIG_DEFINED
-typedef struct {
-    int n_layer;
-    int n_head;
-    int d_model;
-    int head_dim;
-    int hidden_dim;
-    int vocab;
-    int max_seq;
-    int n_kv_head;
-} OrionModelConfig;
-#endif
+#include "model_config.h"
 
 /// Opaque handle to a compiled ANE program.
 typedef struct OrionProgram OrionProgram;
@@ -40,7 +26,7 @@ OrionProgram* orion_compile_mil(
 );
 
 /// Evaluate a compiled ANE program.
-/// @param prog        Compiled program handle
+/// @param prog        Compiled ANE program handle
 /// @param inputs      Array of input IOSurface tensors
 /// @param num_inputs  Number of inputs
 /// @param outputs     Array of output IOSurface tensors (pre-allocated)

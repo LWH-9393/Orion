@@ -7,6 +7,15 @@
 #include <stdio.h>
 #include <string.h>
 
+static int qwen35_q_dim(const OrionModelConfig* cfg) {
+    return cfg->n_head * cfg->head_dim;
+}
+
+static int qwen35_q_proj_dim(const OrionModelConfig* cfg) {
+    // Qwen3.5 gated Q projection emits query + gate channels.
+    return 2 * qwen35_q_dim(cfg);
+}
+
 static int qwen35_kv_dim(const OrionModelConfig* cfg) {
     int n_kv = cfg->n_kv_head > 0 ? cfg->n_kv_head : cfg->n_head;
     return n_kv * cfg->head_dim;
@@ -85,28 +94,30 @@ static int qwen35_post_attn_rmsnorm(OrionGraph* g, int input, int layer, int buc
 
 OrionGraph* orion_frontend_qwen35_prefill_q_proj(int layer, int bucket, const OrionModelConfig* cfg) {
     int d = cfg->d_model;
+    int q_proj_dim = qwen35_q_proj_dim(cfg);
     int s = bucket;
     OrionGraph* g = orion_graph_create();
     int rms = qwen35_input_rmsnorm(g, layer, bucket, cfg);
 
     char path[256];
     snprintf(path, sizeof(path), "@model_path/layer%d/self_attn_q_proj.bin", layer);
-    int q_proj = orion_gb_linear(g, rms, "q_proj", d, d * 2, s, path, NULL);
-    int q_proj32 = orion_pattern_cast_to_fp32(g, q_proj, "q_proj32", d * 2, s);
+    int q_proj = orion_gb_linear(g, rms, "q_proj", d, q_proj_dim, s, path, NULL);
+    int q_proj32 = orion_pattern_cast_to_fp32(g, q_proj, "q_proj32", q_proj_dim, s);
     orion_gb_output(g, q_proj32, "q_proj");
     return g;
 }
 
 OrionGraph* orion_frontend_qwen35_prefill_q_proj_linear_only(int layer, int bucket, const OrionModelConfig* cfg) {
     int d = cfg->d_model;
+    int q_proj_dim = qwen35_q_proj_dim(cfg);
     int s = bucket;
     OrionGraph* g = orion_graph_create();
     int x16 = qwen35_normed_input(g, bucket, cfg);
 
     char path[256];
     snprintf(path, sizeof(path), "@model_path/layer%d/self_attn_q_proj.bin", layer);
-    int q_proj = orion_gb_linear(g, x16, "q_proj", d, d * 2, s, path, NULL);
-    int q_proj32 = orion_pattern_cast_to_fp32(g, q_proj, "q_proj32", d * 2, s);
+    int q_proj = orion_gb_linear(g, x16, "q_proj", d, q_proj_dim, s, path, NULL);
+    int q_proj32 = orion_pattern_cast_to_fp32(g, q_proj, "q_proj32", q_proj_dim, s);
     orion_gb_output(g, q_proj32, "q_proj");
     return g;
 }

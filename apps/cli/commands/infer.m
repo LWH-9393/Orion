@@ -17,11 +17,19 @@
 // T054: Wire hybrid inference (ANE prefill → CPU decode)
 // T102: ANE full forward (ANE prefill → ANE decode)
 //
+// This command currently exposes the GPT-2 runtime only. Orion-Q Qwen code in
+// this PR is porting/diagnostic scaffolding and is exercised through its test
+// harnesses; end-to-end Qwen CLI dispatch is intentionally not claimed here.
+//
 // Usage: orion infer --prompt "Hello, world" --max_tokens 64 [--ane]
 
 static void print_infer_help(void) {
     fprintf(stderr,
         "Usage: orion infer [options]\n"
+        "\n"
+        "Model support:\n"
+        "  This command currently supports GPT-2 only.\n"
+        "  Orion-Q Qwen paths are diagnostic/test harnesses in this PR.\n"
         "\n"
         "Options:\n"
         "  --prompt TEXT          Input prompt (required)\n"
@@ -31,10 +39,10 @@ static void print_infer_help(void) {
         "  --seed N               RNG seed (default: 42)\n"
         "  --ane                  Use ANE for prefill + decode (default: CPU only)\n"
         "  --ane-prefill          Use ANE for prefill only, CPU decode (v2 mode)\n"
-        "  --weights PATH         Path to weight blobs directory\n"
+        "  --weights PATH         Path to GPT-2 weight blobs directory\n"
         "                         (default: model/blobs/gpt2_124m)\n"
-        "  --vocab PATH           Path to vocab.json (default: tokenizer/data/vocab.json)\n"
-        "  --merges PATH          Path to merges.txt (default: tokenizer/data/merges.txt)\n"
+        "  --vocab PATH           Path to GPT-2 vocab.json (default: tokenizer/data/vocab.json)\n"
+        "  --merges PATH          Path to GPT-2 merges.txt (default: tokenizer/data/merges.txt)\n"
         "  --help                 Show this help message\n"
     );
 }

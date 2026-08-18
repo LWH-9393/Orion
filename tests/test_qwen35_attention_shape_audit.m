@@ -63,6 +63,28 @@ static int validate_entry(NSArray *entries, NSString *blobDir, NSString *relPath
     return 1;
 }
 
+static int validate_matrix_shape(NSArray *entries, NSString *relPath, int rows, int cols) {
+    NSDictionary *entry = entry_for_path(entries, relPath);
+    if (!entry) {
+        fprintf(stderr, "FAIL: missing manifest entry for %s\n", relPath.UTF8String);
+        return 0;
+    }
+    NSArray *shape = entry[@"shape"];
+    if (![shape isKindOfClass:[NSArray class]] || [shape count] != 2) {
+        fprintf(stderr, "FAIL: expected matrix shape for %s, got %s\n",
+                relPath.UTF8String, [[shape description] UTF8String]);
+        return 0;
+    }
+    int gotRows = [shape[0] intValue];
+    int gotCols = [shape[1] intValue];
+    if (gotRows != rows || gotCols != cols) {
+        fprintf(stderr, "FAIL: %s semantic shape mismatch expected=[%d,%d] got=[%d,%d]\n",
+                relPath.UTF8String, rows, cols, gotRows, gotCols);
+        return 0;
+    }
+    return 1;
+}
+
 int main(int argc, const char *argv[]) {
     @autoreleasepool {
         if (argc < 2) {
@@ -104,10 +126,22 @@ int main(int argc, const char *argv[]) {
             }
         }
 
+        int dModel = [runtime[@"hidden_size"] intValue];
+        int nHead = [runtime[@"num_attention_heads"] intValue];
+        int nKvHead = [runtime[@"num_key_value_heads"] intValue];
+        int headDim = [runtime[@"head_dim"] intValue];
+        if (dModel <= 0 || nHead <= 0 || nKvHead <= 0 || headDim <= 0) {
+            fprintf(stderr, "FAIL: manifest missing full-attention dimensions\n");
+            return 1;
+        }
+        int qDim = nHead * headDim;
+        int kvDim = nKvHead * headDim;
+
         printf("PASS: qwen35 attention shape audit\n");
         printf("  blob_dir=%s\n", blobDir.UTF8String);
         printf("  n_linear_layers=%d\n", nLinear);
         printf("  n_full_layers=%d\n", nFull);
+        printf("  q_dim=%d kv_dim=%d d_model=%d\n", qDim, kvDim, dModel);
         printf("  attention_note=%s\n", "Qwen3.5 hybrid attention uses non-standard projected dimensions");
 
         int ok = 1;
@@ -115,6 +149,14 @@ int main(int argc, const char *argv[]) {
         ok &= validate_entry(entries, blobDir, @"layer3/self_attn_k_proj.bin");
         ok &= validate_entry(entries, blobDir, @"layer3/self_attn_v_proj.bin");
         ok &= validate_entry(entries, blobDir, @"layer3/self_attn_o_proj.bin");
+
+        // Validate the manifest semantically, not only by checking blob byte count.
+        // Qwen3.5 gated Q projection is [2*q_dim, d_model].
+        ok &= validate_matrix_shape(entries, @"layer3/self_attn_q_proj.bin", 2 * qDim, dModel);
+        ok &= validate_matrix_shape(entries, @"layer3/self_attn_k_proj.bin", kvDim, dModel);
+        ok &= validate_matrix_shape(entries, @"layer3/self_attn_v_proj.bin", kvDim, dModel);
+        ok &= validate_matrix_shape(entries, @"layer3/self_attn_o_proj.bin", dModel, qDim);
+
         ok &= validate_entry(entries, blobDir, @"layer0/linear_attn_in_proj_qkv.bin");
         ok &= validate_entry(entries, blobDir, @"layer0/linear_attn_in_proj_z.bin");
         ok &= validate_entry(entries, blobDir, @"layer0/linear_attn_in_proj_a.bin");
@@ -129,7 +171,7 @@ int main(int argc, const char *argv[]) {
             return 1;
         }
 
-        printf("  next_blocker=%s\n", "derive full_attention and linear_attention semantics before CPU kernel implementation");
+        printf("  next_blocker=%s\n", "end-to-end Qwen CLI dispatch remains outside this diagnostic audit");
         return 0;
     }
 }

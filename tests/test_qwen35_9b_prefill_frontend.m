@@ -27,6 +27,18 @@ static const OrionModelConfig kQwen35_9B = {
     .max_seq = 262144,
 };
 
+static bool output_channels_equal(OrionGraph* g, int expected) {
+    if (!g || g->n_outputs != 1) return false;
+    int idx = g->outputs[0].node_idx;
+    if (idx < 0 || idx >= g->n_nodes) return false;
+    int got = g->nodes[idx].shape[1];
+    if (got != expected) {
+        NSLog(@"q_proj output channel mismatch: got=%d expected=%d", got, expected);
+        return false;
+    }
+    return true;
+}
+
 static NSString* compile_graph(OrionGraph* g) {
     if (!g) return nil;
     OrionValidationResult vr = orion_graph_validate(g);
@@ -43,6 +55,11 @@ static NSString* compile_graph(OrionGraph* g) {
 
 static bool test_q_proj(void) {
     OrionGraph* g = orion_frontend_qwen35_prefill_q_proj(3, 64, &kQwen35_9B);
+    int expected = 2 * kQwen35_9B.n_head * kQwen35_9B.head_dim;
+    if (!output_channels_equal(g, expected)) {
+        if (g) orion_graph_free(g);
+        return false;
+    }
     NSString* mil = compile_graph(g);
     if (!mil) return false;
     return [mil containsString:@"self_attn_q_proj.bin"] &&

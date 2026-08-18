@@ -1,8 +1,8 @@
-# Orion-Q Hybrid Parity Close-Out
+# Orion-Q Hybrid Parity Diagnostic Close-Out
 
 ## Summary
 
-Hybrid parity for the current Orion-Q target smoke scope is closed.
+Hybrid parity for the current Orion-Q target smoke fixtures is closed within the repo-local diagnostic harness.
 
 Target prompt set:
 
@@ -11,7 +11,7 @@ Target prompt set:
 - `안녕하세요`
 - `정답은`
 
-Closed modes:
+Closed diagnostic modes:
 
 - `single`
 - `all_full`
@@ -23,13 +23,13 @@ For the target prompt set above:
 - `single exact parity`: closed
 - `all_full exact parity`: closed
 
-This close-out uses the current Orion-Q production path and diagnostics, not a disconnected external harness.
+This close-out uses the Orion-Q repo-local diagnostic path rather than a disconnected external harness.
 
 ## Validation Meaning
 
 The parity close-out means:
 
-- no remaining top-1 divergence in the target smoke scope
-- diagnostics and parity checks can be treated as closed for Orion-Q scope
+- no remaining top-1 divergence in the documented target smoke fixtures
+- the corresponding parity diagnostics can be treated as closed for that narrow scope
 
-It does not claim broader downstream task quality by itself.
+It does not establish broader downstream task quality, production readiness, or a user-facing Qwen path through `orion infer`.

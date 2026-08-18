@@ -17,6 +17,7 @@ compiler/model_config.h
 compiler/frontends/qwen35_prefill.c
 compiler/frontends/qwen35_prefill.h
 
+core/model_config.h
 core/ane_runtime.h
 core/ane_runtime.m
 core/mil_builder.m

@@ -1,13 +1,13 @@
 # Orion-Q
 
-Orion-Q is a Qwen-focused porting and diagnostics subset built on top of Orion.
+Orion-Q is Qwen-focused porting and diagnostics scaffolding built on top of Orion.
 
-It is not a separate engine. It is a curated extension of Orion that adds:
+It is not a separate engine, and this PR does not yet expose Qwen through the user-facing `orion infer` command. The current CLI remains GPT-2-only. Orion-Q adds repository-local building blocks and verification harnesses for:
 
 - Qwen model configs and blob conversion
-- Qwen CPU inference path
-- Qwen ANE or hybrid inference path
-- Qwen LoRA training primitives
+- Qwen CPU reference and diagnostic inference paths
+- Qwen ANE/hybrid prefill and parity probes
+- Qwen LoRA training-preparation primitives
 - Qwen diagnostics, including smoke, probe, parity, and diff tests
 
 The boundary for this subset is defined in:
@@ -16,36 +16,41 @@ The boundary for this subset is defined in:
 
 ## What Orion-Q Is
 
-Orion-Q is the part of the local Orion worktree that makes Qwen-family models runnable and verifiable inside Orion.
+Orion-Q is the part of the Orion worktree used to port and verify Qwen-family model components against Orion's compiler, runtime, CPU reference code, and ANE experiments.
 
 In practical terms, Orion-Q includes:
 
 - Qwen frontend and model registration
-- Qwen weight loading and export path
-- Qwen-specific CPU and ANE execution support
-- Qwen LoRA training path
+- Qwen manifest/blob conversion and validation
+- Qwen-specific CPU reference kernels
+- Qwen ANE/hybrid diagnostic paths
+- Qwen LoRA training preparation
 - Qwen diagnostics and validation tests
+
+These pieces are useful for integration work, but they should not be read as a claim that the normal Orion CLI already provides end-to-end Qwen generation.
 
 ## What Orion-Q Is Not
 
-Orion-Q does not include:
+Orion-Q does not currently include:
 
+- end-to-end Qwen dispatch in `orion infer`
+- a production Qwen CLI tokenizer/special-token integration
+- a supported Qwen user-facing generation command
 - Silver accelerator work
 - user-specific training tracks
 - CRPG or other domain assets
 - reports, logs, or generated tokenizer experiment outputs
 - exported checkpoints or model weights
 
-Those belong to downstream tracks or local runtime artifacts, not to Orion-Q itself.
-
 ## Current Status
 
-Within the currently defined Orion-Q scope:
+Within the currently defined Orion-Q diagnostic scope:
 
-- Qwen porting core: complete
-- binary judge diagnostics: close-out achieved
-- target hybrid parity smoke scope: close-out achieved
-- ANE training preparation line: complete
+- Qwen porting primitives and model registration: present
+- CPU reference/diagnostic paths: present
+- target hybrid parity smoke diagnostics: close-out achieved for the documented fixtures
+- ANE training preparation line: complete for the documented candidate path
+- user-facing Qwen CLI integration: not included in this PR
 
 Supporting documents:
 
@@ -53,9 +58,15 @@ Supporting documents:
 - `docs/orion_q/ORION_Q_HYBRID_PARITY_CLOSEOUT.md`
 - `docs/orion_q/ORION_Q_ANE_PREP_CLOSEOUT.md`
 
+## Tests
+
+`make test` includes the two self-contained Qwen frontend tests in addition to Orion's existing verification suite.
+
+`make test-qwen` builds all 33 Qwen test executables, then runs the two self-contained frontend tests. The remaining Qwen programs are explicit probes that require converted model/tokenizer fixtures and/or ANE hardware and are not silently run without those prerequisites.
+
 ## Included Code Areas
 
-The shared Orion-Q subset is expected to cover these groups:
+The shared Orion-Q subset covers these groups:
 
 - shared Orion core changes required by Qwen support
 - `compiler/frontends/qwen35_*`
@@ -68,15 +79,16 @@ The shared Orion-Q subset is expected to cover these groups:
 
 ## Validation Philosophy
 
-Orion-Q treats diagnostics as part of the product surface, not as throwaway experiments.
+Orion-Q treats diagnostics as first-class integration evidence rather than throwaway experiments. Depending on prerequisites, those diagnostics include:
 
-That means the following are first-class parts of the subset:
-
-- smoke tests
+- self-contained frontend smoke tests
+- manifest and attention-shape audits
 - bridge-stage diffs
 - layer diffs
 - parity checks
 - ANE training probes
+
+Passing a diagnostic scope does not by itself establish a supported end-to-end Qwen CLI path.
 
 ## Recommended Share Mode
 
@@ -84,11 +96,11 @@ The recommended way to share Orion-Q is:
 
 1. As an Orion-based fork or draft PR branch
 2. With generated artifacts excluded
-3. With a narrow, explicit scope
+3. With the diagnostic/integration scope stated explicitly
 
 Suggested framing:
 
-`Orion-Q: a Qwen-focused porting and diagnostics subset built on top of Orion`
+`Orion-Q: Qwen porting and diagnostics scaffolding built on top of Orion`
 
 ## Excluded Artifacts
 
@@ -125,7 +137,7 @@ Upstream Orion remains the execution core.
 Orion-Q should be communicated as:
 
 - Orion core
-- plus Qwen-specific porting
-- plus Qwen-specific diagnostics
+- plus Qwen-specific porting primitives
+- plus Qwen-specific diagnostics and integration probes
 
-It should not be presented as a replacement brand or a disconnected new project.
+It should not be presented as a replacement brand, a disconnected new engine, or a completed Qwen CLI integration.
